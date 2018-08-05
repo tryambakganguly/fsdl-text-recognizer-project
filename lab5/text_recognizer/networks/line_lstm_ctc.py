@@ -10,7 +10,7 @@ from text_recognizer.models.line_model import LineModel
 from text_recognizer.networks.lenet import lenet
 from text_recognizer.networks.misc import slide_window
 from text_recognizer.networks.ctc import ctc_decode
-
+from tensorflow.keras.layers import  BatchNormalization
 
 def line_lstm_ctc(input_shape, output_shape, window_width=28, window_stride=14):
     image_height, image_width = input_shape
@@ -50,7 +50,26 @@ def line_lstm_ctc(input_shape, output_shape, window_width=28, window_stride=14):
     convnet_outputs = TimeDistributed(convnet)(image_patches)
     # (num_windows, 128)
 
-    lstm_output = lstm_fn(128, return_sequences=True)(convnet_outputs)
+    convnet_outputs = BatchNormalization()(convnet_outputs)
+    convnet_outputs = Dropout(0.5)(convnet_outputs)
+    #lstm_output = lstm_fn(128, return_sequences=True)(convnet_outputs)
+    
+    
+    # Model 1
+    lstm_output = Bidirectional (lstm_fn(256, return_sequences=True))(convnet_outputs)
+    lstm_output = Dropout(0.5)(lstm_output)
+    
+    lstm_output = Bidirectional (lstm_fn(256, return_sequences=True))(convnet_outputs)
+    #lstm_output = lstm_fn(256, return_sequences=True)(lstm_output)
+    #lstm_output = BatchNormalization()(lstm_output)
+    lstm_output = Dropout(0.5)(lstm_output)
+    
+    # Model 2
+    #lstm_output = Bidirectional (lstm_fn(256, return_sequences=True))(convnet_outputs)
+    #lstm_output = Bidirectional (lstm_fn(128, return_sequences=True))(lstm_output)
+    
+    
+    
     # (num_windows, 128)
 
     softmax_output = Dense(num_classes, activation='softmax', name='softmax_output')(lstm_output)
